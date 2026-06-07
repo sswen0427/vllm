@@ -138,6 +138,19 @@ def _get_backend_priorities(
                 AttentionBackendEnum.TURBOQUANT,
             ]
         else:
+            # FlashAttention is not supported on pre-Ampere GPUs. Prefer
+            # Triton over FlashInfer in auto-selection for those devices to
+            # avoid selecting a backend that may fail only after launching
+            # paged prefill kernels. Users can still explicitly request
+            # FlashInfer with --attention-backend FLASHINFER.
+            if device_capability < DeviceCapability(8, 0):
+                return [
+                    AttentionBackendEnum.TRITON_ATTN,
+                    AttentionBackendEnum.FLASHINFER,
+                    AttentionBackendEnum.FLEX_ATTENTION,
+                    AttentionBackendEnum.TURBOQUANT,
+                ]
+
             return [
                 AttentionBackendEnum.FLASH_ATTN,
                 AttentionBackendEnum.FLASHINFER,
